@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+/* ============================================================
+   URAIR — Theme 01: Luxury Editorial Commerce
+   Design Tokens
+   ============================================================ */
+@layer base {
+  :root {
+    /* Brand Palette - High Contrast Light Theme */
+    --color-obsidian:     #000000;
+    --color-charcoal:     #1a1a1a;
+    --color-graphite:     #333333;
+    --color-mist:         #e5e5e5;
+    --color-stone:        #808080;
+    --color-silver:       #b3b3b3;
+    --color-pearl:        #f2f2f2;
+    --color-ivory:        #f9f9f9;
+    --color-white:        #ffffff;
+
+    /* Screenshot Palette Match */
+    --color-bg-light:     #f0f0f0;
+    --color-card-bg:      #f0eeed;
+
+    /* Gold Accent (Stars/Highlights) */
+    --color-gold:         #ffc633;
+    --color-gold-light:   #ffd35c;
+    --color-gold-dark:    #cc9e29;
+
+    /* Semantic */
+    --color-bg:           var(--color-white);
+    --color-surface:      var(--color-pearl);
+    --color-surface-2:    var(--color-ivory);
+    --color-border:       rgba(0, 0, 0, 0.1);
+    --color-text:         var(--color-obsidian);
+    --color-text-muted:   #666666;
+    --color-accent:       var(--color-obsidian);
+    --color-accent-hover: var(--color-charcoal);
+
+    /* Typography */
+    --font-sans:   'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-serif:  'Playfair Display', Georgia, serif;
+
+    --radius-lg:  20px;
+    --radius-full: 9999px;
+
+    /* Premium Theme Tokens */
+    --color-premium-primary: #1A1A1A;
+    --color-premium-secondary: #A67C52;
+    --color-premium-accent: #D2B48C;
+    --color-premium-bg: #F9F7F2;
+    --color-premium-surface: #FFFFFF;
+    --color-premium-text-main: #1A1A1A;
+    --color-premium-text-muted: #5D5D5D;
+    --color-premium-divider: #E5E1D8;
+    
+    --font-premium: 'Poppins', sans-serif;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-obsidian);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
+
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ============================================================
+   Tailwind Theme Extension
+   ============================================================ */
+@theme {
+  --color-obsidian:    #000000;
+  --color-charcoal:    #1a1a1a;
+  --color-mist:        #e5e5e5;
+  --color-stone:       #808080;
+  --color-pearl:       #f2f2f2;
+  --color-ivory:       #f9f9f9;
+  --color-gold:        #ffc633;
+  --color-bg-light:     #f0f0f0;
+  --color-card-bg:      #f0eeed;
+
+  --font-sans:  'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
+  --color-premium-primary: #1A1A1A;
+  --color-premium-secondary: #A67C52;
+  --color-premium-accent: #D2B48C;
+  --color-premium-bg: #F9F7F2;
+  --color-premium-surface: #FFFFFF;
+  --color-premium-text-main: #1A1A1A;
+  --color-premium-text-muted: #5D5D5D;
+  --color-premium-divider: #E5E1D8;
+}
+
+@layer utilities {
+  .premium-theme {
+    @apply bg-premium-bg text-premium-text-main font-['Poppins'];
+  }
+  
+  .premium-theme h1, 
+  .premium-theme h2, 
+  .premium-theme h3, 
+  .premium-theme h4, 
+  .premium-theme h5, 
+  .premium-theme h6 {
+    @apply font-['Poppins'] text-premium-primary;
+  }
+
+  .premium-button {
+    @apply bg-premium-secondary text-white px-8 py-4 rounded-full font-bold tracking-widest uppercase hover:bg-premium-primary transition-all duration-300;
+  }
+
+  .premium-card {
+    @apply bg-white border border-premium-divider rounded-[30px] p-8 shadow-sm hover:shadow-xl transition-all duration-500;
+  }
+}
+
