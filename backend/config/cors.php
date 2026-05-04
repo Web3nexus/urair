@@ -23,7 +23,9 @@ return [
         'http://localhost:5173', 
         'http://127.0.0.1:5173',
         'https://urair.com',
-        'https://www.urair.com'
+        'https://www.urair.com',
+        'https://myurair.com',
+        'https://www.myurair.com'
     ],
 
     'allowed_origins_patterns' => [],
