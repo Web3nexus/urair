@@ -1,8 +1,13 @@
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Shield, Zap, Globe } from 'lucide-react'
 
 export default function StoryPage() {
+  useEffect(() => {
+    console.log('StoryPage mounted at', window.location.pathname);
+  }, []);
+
   return (
     <div className="bg-premium-bg min-h-screen pt-32 lg:pt-40">
       {/* ── Hero ── */}
