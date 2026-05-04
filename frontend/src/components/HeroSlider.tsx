@@ -195,11 +195,7 @@ export function HeroSlider({ slides, stats }: HeroSliderProps) {
                   alt="Hero Slide" 
                   className="w-full h-full object-cover"
                 />
-                {/* Blend Gradient */}
-                <div 
-                  className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-transparent to-transparent pointer-events-none" 
-                  style={{ backgroundImage: `linear-gradient(to right, ${slide.bg_color || '#f2f0f1'}, transparent)` }}
-                />
+                {/* Clean Split (No Gradient Divider) */}
               </motion.div>
 
             </div>
