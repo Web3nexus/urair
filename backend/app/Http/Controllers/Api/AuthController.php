@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserRegistered;
+use App\Notifications\GeneralNotification;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
 
@@ -53,11 +54,21 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
-
         try {
             $user->sendEmailVerificationNotification();
         } catch (\Exception $e) {
             \Log::error('Failed to send verification email: ' . $e->getMessage());
+        }
+
+        // Notify admin
+        $admins = User::where('role', 'admin')->orWhere('email', 'admin@urair.com')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new GeneralNotification(
+                'New Account Registration',
+                "A new user {$user->name} ({$user->email}) has registered.",
+                'registration',
+                "/admin/users"
+            ));
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -91,6 +102,14 @@ class AuthController extends Controller
              // Optional: throw error or just allow it. The user asked for "different logic"
         }
 
+        if ($user->two_factor_enabled) {
+            return response()->json([
+                '2fa_required' => true,
+                'user_id' => $user->id,
+                'message' => 'Two-factor authentication required.'
+            ]);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -121,6 +140,14 @@ class AuthController extends Controller
             Auth::logout();
             throw ValidationException::withMessages([
                 'email' => ['Access denied. This portal is restricted to authorized personnel.'],
+            ]);
+        }
+
+        if ($user->two_factor_enabled) {
+            return response()->json([
+                '2fa_required' => true,
+                'user_id' => $user->id,
+                'message' => 'Two-factor authentication required.'
             ]);
         }
 

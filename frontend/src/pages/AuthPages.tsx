@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Loader2, Shield } from 'lucide-react'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
@@ -18,6 +18,12 @@ export default function AuthPages({ type }: { type: 'login' | 'register' | 'admi
   })
   const [cfToken, setCfToken] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  
+  // 2FA State
+  const [is2FARequired, setIs2FARequired] = useState(false)
+  const [twoFactorUserId, setTwoFactorUserId] = useState<number | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
   const { turnstile_site_key, site_logo } = useCMSStore()
@@ -44,6 +50,13 @@ export default function AuthPages({ type }: { type: 'login' | 'register' | 'admi
         data = await authApi.register(payload)
       }
       
+      if (data['2fa_required']) {
+        setIs2FARequired(true)
+        setTwoFactorUserId(data.user_id)
+        setLoading(false)
+        return
+      }
+      
       setAuth(data.user, data.access_token)
       
       if (data.user.email === 'admin@urair.com' || data.user.role === 'admin') {
@@ -53,6 +66,29 @@ export default function AuthPages({ type }: { type: 'login' | 'register' | 'admi
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Authentication failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await authApi.verify2FALogin({
+        user_id: twoFactorUserId,
+        code: twoFactorCode
+      })
+      
+      setAuth(data.user, data.access_token)
+      if (data.user.email === 'admin@urair.com' || data.user.role === 'admin') {
+        navigate('/securegate')
+      } else {
+        navigate('/')
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid 2FA code.')
     } finally {
       setLoading(false)
     }
@@ -110,7 +146,35 @@ export default function AuthPages({ type }: { type: 'login' | 'register' | 'admi
             </div>
           )}
 
-          <form className={`space-y-4 ${type === 'register' ? 'mt-8' : ''}`} onSubmit={handleAuth}>
+          {is2FARequired ? (
+            <form className="space-y-6" onSubmit={handleVerify2FA}>
+              <div className="space-y-2">
+                <label className="text-[10px] tracking-[0.3em] uppercase text-premium-text-muted font-black">Authentication Code</label>
+                <div className="relative group">
+                  <Shield className="absolute left-6 top-1/2 -translate-y-1/2 text-premium-text-muted group-focus-within:text-premium-secondary transition-colors" size={18} />
+                  <input
+                    type="text"
+                    required
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value)}
+                    className="w-full bg-white border border-premium-divider/50 rounded-full text-premium-primary px-14 py-3 text-sm font-bold outline-none focus:border-premium-secondary transition-all shadow-sm tracking-[0.2em]"
+                    placeholder="123456"
+                    maxLength={6}
+                  />
+                </div>
+                <p className="text-[10px] text-premium-text-muted mt-2 px-2 uppercase tracking-widest font-bold">Enter the 6-digit code from your authenticator app.</p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || twoFactorCode.length < 6}
+                className="w-full bg-premium-primary text-white rounded-full py-4 text-[10px] uppercase tracking-[0.3em] font-black hover:bg-premium-secondary transition-all shadow-xl shadow-premium-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+              >
+                {loading ? <Loader2 className="animate-spin" size={16} /> : 'Verify Access'}
+              </button>
+            </form>
+          ) : (
+            <form className={`space-y-4 ${type === 'register' ? 'mt-8' : ''}`} onSubmit={handleAuth}>
             {type === 'register' && (
               <div className="space-y-2">
                 <label className="text-[10px] tracking-[0.3em] uppercase text-premium-text-muted font-black">Full Name</label>
@@ -207,6 +271,7 @@ export default function AuthPages({ type }: { type: 'login' | 'register' | 'admi
               {loading ? <Loader2 className="animate-spin" size={20} /> : (type === 'login' || type === 'admin-login' ? 'Sign In' : 'Sign Up')} <ArrowRight size={20} />
             </button>
           </form>
+          )}
 
           {type !== 'admin-login' && (
             <div className="text-center pt-10 border-t border-premium-divider/30">

@@ -131,26 +131,26 @@ export function HeroSlider({ slides, stats }: HeroSliderProps) {
               )}
             </div>
           ) : (
-            // ─── SPLIT LAYOUT ───
-            <div className="w-full h-full flex flex-col lg:flex-row relative z-10 pt-32 lg:pt-0">
+            // ─── SPLIT LAYOUT (UNIFIED) ───
+            <div className="w-full h-full relative z-10 container mx-auto px-6 lg:px-12 flex items-center">
               
-              {/* Left Text Half */}
+              {/* Text Content */}
               <motion.div 
                 variants={{
-                  enter: { x: '-15%', opacity: 0 },
+                  enter: { x: -30, opacity: 0 },
                   center: { x: 0, opacity: 1, transition: { duration: 0.8, ease: "easeOut" } },
-                  exit: { x: '-15%', opacity: 0, transition: { duration: 0.4 } }
+                  exit: { x: -30, opacity: 0, transition: { duration: 0.4 } }
                 }}
-                className="w-full lg:w-1/2 h-full flex flex-col justify-center px-6 lg:pl-20 lg:pr-12 relative z-20 pb-20 lg:pb-0"
+                className="w-full lg:w-1/2 relative z-20 py-20 lg:py-0"
               >
-                <div className="max-w-2xl space-y-10 w-full">
+                <div className="max-w-2xl space-y-10">
                   <div className="space-y-6">
                     <div className="flex items-center gap-4 text-stone text-[8px] tracking-[0.4em] uppercase font-bold">
                       <div className="w-12 h-[1px] bg-stone" />
                       Premium Selection
                     </div>
                     <h1 
-                      className={cn("font-serif font-black text-obsidian leading-[1.1] uppercase tracking-tighter break-words", slide.titleSize || 'text-5xl lg:text-6xl')}
+                      className={cn("font-serif font-black text-obsidian leading-[1.1] uppercase tracking-tighter break-words", slide.titleSize || 'text-5xl lg:text-7xl')}
                     >
                       {slide.headline}
                     </h1>
@@ -162,15 +162,14 @@ export function HeroSlider({ slides, stats }: HeroSliderProps) {
                   </div>
 
                   <div>
-                    <Link to="/shop" className="group inline-flex items-center gap-3 bg-obsidian text-white px-12 py-5 rounded-full text-xs tracking-[0.2em] uppercase font-bold hover:bg-charcoal transition-all shadow-2xl">
+                    <Link to="/shop" className="group inline-flex items-center gap-3 bg-obsidian text-white px-12 py-5 rounded-full text-xs tracking-[0.2em] uppercase font-bold hover:bg-charcoal transition-all shadow-xl">
                       Shop Now
                       <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </div>
 
-                  {/* Brand Stats */}
                   {stats && stats.length > 0 && (
-                    <div className="grid grid-cols-2 gap-8 pt-12 border-t border-mist/30">
+                    <div className="grid grid-cols-2 gap-8 pt-12 border-t border-mist/30 max-w-md">
                       {stats.slice(0, 2).map((stat, idx) => (
                         <div key={idx} className="space-y-1">
                           <p className="text-2xl lg:text-3xl font-serif font-black text-obsidian">{stat.value}</p>
@@ -182,19 +181,24 @@ export function HeroSlider({ slides, stats }: HeroSliderProps) {
                 </div>
               </motion.div>
               
-              {/* Right Image Half */}
+              {/* Absolute Image Background */}
               <motion.div 
                 variants={{
-                  enter: { x: '15%', opacity: 0 },
-                  center: { x: 0, opacity: 1, transition: { duration: 0.8, ease: "easeOut" } },
-                  exit: { x: '15%', opacity: 0, transition: { duration: 0.4 } }
+                  enter: { opacity: 0, x: 30 },
+                  center: { opacity: 1, x: 0, transition: { duration: 1, ease: "easeOut" } },
+                  exit: { opacity: 0, x: 30, transition: { duration: 0.6 } }
                 }}
-                className="w-full lg:w-1/2 h-full hidden lg:block relative z-10"
+                className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2 z-10"
               >
                 <img 
                   src={slide.image || "https://images.unsplash.com/photo-1550614005-045353066347?auto=format&fit=crop&q=80&w=1200"} 
                   alt="Hero Slide" 
                   className="w-full h-full object-cover"
+                />
+                {/* Blend Gradient */}
+                <div 
+                  className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-transparent to-transparent pointer-events-none" 
+                  style={{ backgroundImage: `linear-gradient(to right, ${slide.bg_color || '#f2f0f1'}, transparent)` }}
                 />
               </motion.div>
 

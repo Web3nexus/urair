@@ -25,7 +25,7 @@ import {
   User as UserIcon
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useCMSStore } from '@/store/cmsStore'
 import { Price } from '@/components/Price'
@@ -33,20 +33,32 @@ import { Price } from '@/components/Price'
 export default function UserDashboard() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { user: authUser, logout } = useAuthStore()
   const { navLinks, site_logo, systemName } = useCMSStore()
   
-  // Set active tab based on URL path
+  // Set active tab based on URL path or query param
   const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = new URLSearchParams(window.location.search).get('tab')
+    if (tabParam) return decodeURIComponent(tabParam)
     if (location.pathname === '/wishlist') return 'My Wishlist'
     return 'Overview'
   })
 
   useEffect(() => {
-    if (location.pathname === '/wishlist') setActiveTab('My Wishlist')
-    else if (location.pathname === '/account/orders') setActiveTab('Order History')
-    else if (location.pathname === '/account') setActiveTab('Overview')
-  }, [location.pathname])
+    const tabParam = searchParams.get('tab')
+    if (tabParam) {
+      setActiveTab(decodeURIComponent(tabParam))
+    } else if (location.pathname === '/wishlist') {
+      setActiveTab('My Wishlist')
+    } else if (location.pathname === '/account/orders') {
+      setActiveTab('Order History')
+    } else if (location.pathname === '/account/security') {
+      setActiveTab('Security')
+    } else if (location.pathname === '/account') {
+      setActiveTab('Overview')
+    }
+  }, [location.pathname, searchParams])
 
   const { data: user } = useQuery({
     queryKey: ['me'],
@@ -99,6 +111,60 @@ export default function UserDashboard() {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [notify, setNotify] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
+  const [twoFactorStatus, setTwoFactorStatus] = useState(false)
+  const [setupData, setSetupData] = useState<any>(null)
+  const [otpCode, setOtpCode] = useState('')
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
+  const [loading2FA, setLoading2FA] = useState(false)
+
+  useEffect(() => {
+    api.get('/2fa/status').then(res => setTwoFactorStatus(res.data.enabled)).catch(console.error)
+  }, [])
+
+  const handleSetup2FA = async () => {
+    setLoading2FA(true)
+    try {
+      const res = await api.post('/2fa/setup')
+      setSetupData(res.data)
+    } catch {
+      showNotify('Failed to initialize 2FA', 'error')
+    } finally {
+      setLoading2FA(false)
+    }
+  }
+
+  const handleEnable2FA = async () => {
+    if (!otpCode || otpCode.length !== 6) { showNotify('Enter a valid 6-digit code', 'error'); return }
+    setLoading2FA(true)
+    try {
+      const res = await api.post('/2fa/enable', { code: otpCode })
+      setTwoFactorStatus(true)
+      setRecoveryCodes(res.data.recovery_codes)
+      setSetupData(null)
+      setOtpCode('')
+      showNotify('2FA has been successfully enabled')
+    } catch (err: any) {
+      showNotify(err.response?.data?.message || 'Invalid code', 'error')
+    } finally {
+      setLoading2FA(false)
+    }
+  }
+
+  const handleDisable2FA = async () => {
+    if (!otpCode || otpCode.length !== 6) { showNotify('Enter a valid 6-digit code', 'error'); return }
+    setLoading2FA(true)
+    try {
+      await api.post('/2fa/disable', { code: otpCode })
+      setTwoFactorStatus(false)
+      setOtpCode('')
+      showNotify('2FA has been disabled')
+    } catch (err: any) {
+      showNotify(err.response?.data?.message || 'Invalid code', 'error')
+    } finally {
+      setLoading2FA(false)
+    }
+  }
+
   const showNotify = (message: string, type: 'success' | 'error' = 'success') => {
     setNotify({ message, type })
     setTimeout(() => setNotify(null), 3000)
@@ -115,6 +181,7 @@ export default function UserDashboard() {
     { id: 'My Wishlist', label: 'My Wishlist', icon: <Heart size={18} /> },
     { id: 'Saved Addresses', label: 'Saved Addresses', icon: <MapPin size={18} /> },
     { id: 'Profile Settings', label: 'Profile Settings', icon: <Settings size={18} /> },
+    { id: 'Security', label: 'Security & 2FA', icon: <Shield size={18} /> },
   ]
 
   const orderTabs = ['All Orders', 'Processing', 'Shipped', 'Completed']
@@ -713,6 +780,170 @@ export default function UserDashboard() {
                     >
                       {isUpdatingProfile ? 'Processing...' : 'Execute Configuration'}
                     </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── SECURITY & 2FA TAB ── */}
+            {activeTab === 'Security' && (
+              <motion.div
+                key="security"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-8"
+              >
+                <div>
+                  <h2 className="text-xl font-black uppercase tracking-[0.2em] text-premium-primary">Security & 2FA</h2>
+                  <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest mt-1">Manage your account security and authentication settings</p>
+                </div>
+
+                {/* Change Password */}
+                <div className="bg-white border border-premium-divider rounded-[2.5rem] p-10 shadow-sm">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-10 h-10 rounded-xl bg-premium-bg flex items-center justify-center text-premium-secondary">
+                      <Shield size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-premium-primary">Change Password</h3>
+                      <p className="text-[10px] text-premium-text-muted mt-0.5">Update your login credentials</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted px-1">New Password</label>
+                      <input
+                        type="password"
+                        value={profileForm.password}
+                        onChange={e => setProfileForm({...profileForm, password: e.target.value})}
+                        className="w-full px-6 py-4 bg-premium-bg border border-premium-divider rounded-2xl outline-none focus:border-premium-secondary transition-all font-bold text-premium-primary text-xs"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted px-1">Confirm New Password</label>
+                      <input
+                        type="password"
+                        value={profileForm.password_confirmation}
+                        onChange={e => setProfileForm({...profileForm, password_confirmation: e.target.value})}
+                        className="w-full px-6 py-4 bg-premium-bg border border-premium-divider rounded-2xl outline-none focus:border-premium-secondary transition-all font-bold text-premium-primary text-xs"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                  </div>
+                  <p className="mt-4 text-[10px] text-premium-text-muted font-bold uppercase tracking-widest italic">Leave blank to keep your current password.</p>
+                  <div className="flex justify-end mt-6">
+                    <button
+                      onClick={() => {
+                        setIsUpdatingProfile(true);
+                        api.put('/me', { password: profileForm.password, password_confirmation: profileForm.password_confirmation })
+                          .then(() => { showNotify('Password updated successfully'); setProfileForm(prev => ({...prev, password: '', password_confirmation: ''})); })
+                          .catch(() => showNotify('Password update failed', 'error'))
+                          .finally(() => setIsUpdatingProfile(false));
+                      }}
+                      disabled={isUpdatingProfile || !profileForm.password}
+                      className="px-10 py-4 bg-premium-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-premium-secondary transition-all shadow-lg disabled:opacity-50"
+                    >
+                      {isUpdatingProfile ? 'Updating...' : 'Update Password'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Two-Factor Authentication */}
+                <div className="bg-white border border-premium-divider rounded-[2.5rem] p-10 shadow-sm">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-premium-bg flex items-center justify-center text-premium-secondary">
+                        <Shield size={18} />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-[0.3em] text-premium-primary">Two-Factor Authentication</h3>
+                        <p className="text-[10px] text-premium-text-muted mt-0.5">Add an extra layer of protection to your account</p>
+                      </div>
+                    </div>
+                    {twoFactorStatus ? (
+                       <span className="text-[8px] bg-green-50 text-green-600 border border-green-200 px-4 py-2 rounded-full font-black uppercase tracking-widest">Active</span>
+                    ) : (
+                       <span className="text-[8px] bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-full font-black uppercase tracking-widest">Disabled</span>
+                    )}
+                  </div>
+
+                  {recoveryCodes.length > 0 && (
+                    <div className="mb-8 p-8 bg-green-50 border border-green-200 rounded-2xl">
+                      <p className="text-[10px] text-green-800 font-black uppercase tracking-widest mb-4">Save These Recovery Codes</p>
+                      <p className="text-xs text-green-700 mb-6">If you lose access to your authenticator device, you can use these codes to log in. Each code can only be used once.</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {recoveryCodes.map(c => (
+                          <code key={c} className="bg-white px-4 py-3 rounded-lg text-center text-xs font-mono font-bold text-green-900 border border-green-200">{c}</code>
+                        ))}
+                      </div>
+                      <button onClick={() => setRecoveryCodes([])} className="mt-6 px-8 py-4 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest w-full hover:bg-green-700 transition-colors">I have saved them securely</button>
+                    </div>
+                  )}
+
+                  {twoFactorStatus ? (
+                    <div className="p-8 bg-premium-bg rounded-2xl border border-premium-divider space-y-6">
+                      <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest">To disable 2FA, enter a code from your authenticator app.</p>
+                      <input type="text" value={otpCode} onChange={e => setOtpCode(e.target.value)} placeholder="123456" maxLength={6} className="w-full px-6 py-4 bg-white border border-premium-divider rounded-2xl outline-none focus:border-red-400 transition-all font-bold text-premium-primary tracking-[0.2em]" />
+                      <button onClick={handleDisable2FA} disabled={loading2FA} className="px-8 py-4 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 transition-all shadow-lg w-full disabled:opacity-50">
+                        {loading2FA ? 'Processing...' : 'Disable 2FA'}
+                      </button>
+                    </div>
+                  ) : setupData ? (
+                    <div className="p-8 bg-premium-bg rounded-2xl border border-premium-divider space-y-8">
+                      <div className="flex flex-col md:flex-row gap-10 items-center">
+                        <div className="bg-white p-6 rounded-2xl border border-premium-divider shadow-sm shrink-0">
+                          <img src={`data:image/svg+xml;base64,${setupData.qr_svg}`} alt="QR Code" className="w-48 h-48" />
+                        </div>
+                        <div className="space-y-6">
+                          <p className="text-sm font-bold text-premium-primary leading-relaxed">1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc).</p>
+                          <p className="text-sm font-bold text-premium-primary leading-relaxed">2. Enter the 6-digit code generated by the app below to confirm setup.</p>
+                          <input type="text" value={otpCode} onChange={e => setOtpCode(e.target.value)} placeholder="123456" maxLength={6} className="w-full px-6 py-4 bg-white border border-premium-divider rounded-2xl outline-none focus:border-premium-secondary transition-all font-bold text-premium-primary tracking-[0.2em]" />
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <button onClick={() => setSetupData(null)} className="px-8 py-4 bg-transparent border border-premium-divider text-premium-primary rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex-1 hover:bg-white transition-all">Cancel</button>
+                        <button onClick={handleEnable2FA} disabled={loading2FA} className="px-8 py-4 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-premium-secondary transition-all shadow-lg flex-1 disabled:opacity-50">
+                          {loading2FA ? 'Verifying...' : 'Verify & Enable'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-8 bg-premium-bg rounded-2xl border border-premium-divider flex flex-col md:flex-row items-center justify-between gap-6">
+                      <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest max-w-md leading-relaxed">Protect your account with two-factor authentication. Each time you log in, you will need to enter a unique code generated by a TOTP authenticator app.</p>
+                      <button onClick={handleSetup2FA} disabled={loading2FA} className="shrink-0 px-8 py-4 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-premium-secondary transition-all shadow-lg disabled:opacity-50">
+                        {loading2FA ? 'Loading...' : 'Enable 2FA'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Active Sessions */}
+                <div className="bg-white border border-premium-divider rounded-[2.5rem] p-10 shadow-sm">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-premium-bg flex items-center justify-center text-premium-secondary">
+                      <Bell size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-premium-primary">Account Activity</h3>
+                      <p className="text-[10px] text-premium-text-muted mt-0.5">Review recent account events</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Last Login', value: 'Today', detail: 'Chrome · MacOS' },
+                      { label: 'Password Changed', value: 'Never', detail: '—' },
+                      { label: 'Email Verified', value: 'Verified', detail: 'Protected' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center justify-between px-6 py-4 bg-premium-bg rounded-2xl border border-premium-divider">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted">{item.label}</p>
+                          <p className="text-xs font-bold text-premium-primary mt-0.5">{item.detail}</p>
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-premium-secondary">{item.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </motion.div>

@@ -73,6 +73,14 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="account/security" 
+            element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            } 
+          />
         </Route>
 
         {/* Admin Route - Secure Gate */}

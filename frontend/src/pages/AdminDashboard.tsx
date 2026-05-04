@@ -5,7 +5,7 @@ import {
   Globe, ShieldCheck, Shield, Upload, MessageSquare, Truck, User as UserIcon, Tag, Send,
   Loader2, CheckCircle2
 } from 'lucide-react'
-import { useState, Fragment, useRef } from 'react'
+import { useState, Fragment, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
@@ -72,6 +72,310 @@ const RevenueChart = ({ data }: { data: any[] }) => {
   )
 }
 
+function AdminProfileTab({ user, showNotify }: { user: any; showNotify: (msg: string, type?: 'success' | 'error') => void }) {
+  const [form, setForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    username: user?.username || '',
+    password: '',
+    password_confirmation: '',
+  })
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setForm(f => ({ ...f, name: user.name || '', email: user.email || '', username: user.username || '' }))
+    }
+  }, [user])
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    const payload: any = { name: form.name, email: form.email }
+    if (form.username) payload.username = form.username
+    if (form.password) { payload.password = form.password; payload.password_confirmation = form.password_confirmation }
+    try {
+      await import('@/api/client').then(m => m.default.put('/me', payload))
+      showNotify('Profile updated successfully')
+      setForm(f => ({ ...f, password: '', password_confirmation: '' }))
+    } catch {
+      showNotify('Update failed', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const inputClass = "w-full px-5 py-3.5 bg-premium-bg border border-premium-divider rounded-xl outline-none focus:border-premium-secondary transition-all text-sm font-medium text-premium-primary placeholder:text-premium-text-muted/50"
+  const labelClass = "text-[10px] font-black uppercase tracking-widest text-premium-text-muted"
+
+  return (
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-black tracking-tighter text-premium-primary uppercase">My Profile</h1>
+        <p className="text-premium-text-muted text-sm mt-1">Manage your administrator account details and credentials.</p>
+      </div>
+
+      {/* Avatar & Name */}
+      <div className="bg-white border border-premium-divider rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center gap-6 mb-8 pb-8 border-b border-premium-divider">
+          <div className="w-20 h-20 rounded-2xl bg-premium-secondary/10 border-2 border-premium-secondary/30 flex items-center justify-center">
+            <span className="text-3xl font-black text-premium-secondary uppercase">{user?.name?.[0] || 'A'}</span>
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-premium-secondary">Administrator</p>
+            <p className="text-xl font-black text-premium-primary mt-1">{user?.name}</p>
+            <p className="text-[10px] text-premium-text-muted font-medium">{user?.email}</p>
+          </div>
+        </div>
+
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted mb-6">Personal Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-2">
+            <label className={labelClass}>Full Name</label>
+            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputClass} placeholder="Admin Name" />
+          </div>
+          <div className="space-y-2">
+            <label className={labelClass}>Email Address</label>
+            <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className={inputClass} placeholder="admin@urair.com" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <label className={labelClass}>Username (optional)</label>
+            <input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} className={inputClass} placeholder="@username" />
+          </div>
+        </div>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white border border-premium-divider rounded-2xl p-8 shadow-sm">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted mb-6">Change Password</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-2">
+            <label className={labelClass}>New Password</label>
+            <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className={inputClass} placeholder="••••••••" />
+          </div>
+          <div className="space-y-2">
+            <label className={labelClass}>Confirm Password</label>
+            <input type="password" value={form.password_confirmation} onChange={e => setForm({ ...form, password_confirmation: e.target.value })} className={inputClass} placeholder="••••••••" />
+          </div>
+        </div>
+        <p className="mt-4 text-[10px] text-premium-text-muted italic">Leave blank to keep your current password.</p>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="px-10 py-4 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-premium-secondary transition-all shadow-lg disabled:opacity-50 flex items-center gap-2"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AdminSecurityTab({ showNotify }: { showNotify: (msg: string, type?: 'success' | 'error') => void }) {
+  const [form, setForm] = useState({ password: '', password_confirmation: '' })
+  const [isSaving, setIsSaving] = useState(false)
+  const [twoFactorStatus, setTwoFactorStatus] = useState(false)
+  const [setupData, setSetupData] = useState<any>(null)
+  const [otpCode, setOtpCode] = useState('')
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([])
+  const [loading2FA, setLoading2FA] = useState(false)
+  
+  useEffect(() => {
+    import('@/api/client').then(m => {
+      m.default.get('/2fa/status').then(res => setTwoFactorStatus(res.data.enabled)).catch(console.error)
+    })
+  }, [])
+
+  const handleSetup2FA = async () => {
+    setLoading2FA(true)
+    try {
+      const res = await import('@/api/client').then(m => m.default.post('/2fa/setup'))
+      setSetupData(res.data)
+    } catch {
+      showNotify('Failed to initialize 2FA', 'error')
+    } finally {
+      setLoading2FA(false)
+    }
+  }
+
+  const handleEnable2FA = async () => {
+    if (!otpCode || otpCode.length !== 6) { showNotify('Enter a valid 6-digit code', 'error'); return }
+    setLoading2FA(true)
+    try {
+      const res = await import('@/api/client').then(m => m.default.post('/2fa/enable', { code: otpCode }))
+      setTwoFactorStatus(true)
+      setRecoveryCodes(res.data.recovery_codes)
+      setSetupData(null)
+      setOtpCode('')
+      showNotify('2FA has been successfully enabled')
+    } catch (err: any) {
+      showNotify(err.response?.data?.message || 'Invalid code', 'error')
+    } finally {
+      setLoading2FA(false)
+    }
+  }
+
+  const handleDisable2FA = async () => {
+    if (!otpCode || otpCode.length !== 6) { showNotify('Enter a valid 6-digit code', 'error'); return }
+    setLoading2FA(true)
+    try {
+      await import('@/api/client').then(m => m.default.post('/2fa/disable', { code: otpCode }))
+      setTwoFactorStatus(false)
+      setOtpCode('')
+      showNotify('2FA has been disabled')
+    } catch (err: any) {
+      showNotify(err.response?.data?.message || 'Invalid code', 'error')
+    } finally {
+      setLoading2FA(false)
+    }
+  }
+
+  const handlePasswordUpdate = async () => {
+    if (!form.password) return
+    if (form.password !== form.password_confirmation) {
+      showNotify('Passwords do not match', 'error'); return
+    }
+    setIsSaving(true)
+    try {
+      await import('@/api/client').then(m => m.default.put('/me', form))
+      showNotify('Password updated successfully')
+      setForm({ password: '', password_confirmation: '' })
+    } catch {
+      showNotify('Password update failed', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const inputClass = "w-full px-5 py-3.5 bg-premium-bg border border-premium-divider rounded-xl outline-none focus:border-premium-secondary transition-all text-sm font-medium text-premium-primary placeholder:text-premium-text-muted/50"
+  const labelClass = "text-[10px] font-black uppercase tracking-widest text-premium-text-muted"
+
+  return (
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-black tracking-tighter text-premium-primary uppercase">Security & 2FA</h1>
+        <p className="text-premium-text-muted text-sm mt-1">Manage your administrator account security settings.</p>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white border border-premium-divider rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-9 h-9 rounded-xl bg-premium-bg border border-premium-divider flex items-center justify-center text-premium-secondary"><Shield size={16} /></div>
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-premium-primary">Change Password</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-2">
+            <label className={labelClass}>New Password</label>
+            <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className={inputClass} placeholder="••••••••" />
+          </div>
+          <div className="space-y-2">
+            <label className={labelClass}>Confirm Password</label>
+            <input type="password" value={form.password_confirmation} onChange={e => setForm({ ...form, password_confirmation: e.target.value })} className={inputClass} placeholder="••••••••" />
+          </div>
+        </div>
+        <p className="mt-4 text-[10px] text-premium-text-muted italic">Leave blank to keep your current password.</p>
+        <div className="flex justify-end mt-6">
+          <button onClick={handlePasswordUpdate} disabled={isSaving || !form.password} className="px-10 py-4 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-premium-secondary transition-all shadow-lg disabled:opacity-50">
+            {isSaving ? 'Updating...' : 'Update Password'}
+          </button>
+        </div>
+      </div>
+
+      {/* 2FA */}
+      <div className="bg-white border border-premium-divider rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-premium-bg border border-premium-divider flex items-center justify-center text-premium-secondary"><ShieldCheck size={16} /></div>
+            <div>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-premium-primary">Two-Factor Authentication</h3>
+              <p className="text-[10px] text-premium-text-muted mt-0.5">Add a second layer of security to your admin account</p>
+            </div>
+          </div>
+          {twoFactorStatus ? (
+             <span className="text-[8px] bg-green-50 text-green-600 border border-green-200 px-3 py-1.5 rounded-full font-black uppercase tracking-widest">Active</span>
+          ) : (
+             <span className="text-[8px] bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-full font-black uppercase tracking-widest">Disabled</span>
+          )}
+        </div>
+
+        {recoveryCodes.length > 0 && (
+          <div className="mb-6 p-6 bg-green-50 border border-green-200 rounded-xl">
+            <p className="text-[10px] text-green-800 font-black uppercase tracking-widest mb-4">Save These Recovery Codes</p>
+            <p className="text-xs text-green-700 mb-4">If you lose access to your authenticator device, you can use these codes to log in. Each code can only be used once.</p>
+            <div className="grid grid-cols-2 gap-3">
+              {recoveryCodes.map(c => (
+                <code key={c} className="bg-white px-3 py-2 rounded text-center text-xs font-mono font-bold text-green-900 border border-green-200">{c}</code>
+              ))}
+            </div>
+            <button onClick={() => setRecoveryCodes([])} className="mt-4 px-6 py-3 bg-green-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest w-full">I have saved them</button>
+          </div>
+        )}
+
+        {twoFactorStatus ? (
+          <div className="p-6 bg-premium-bg rounded-xl border border-premium-divider space-y-4">
+            <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest">To disable 2FA, enter a code from your authenticator app.</p>
+            <input type="text" value={otpCode} onChange={e => setOtpCode(e.target.value)} placeholder="123456" maxLength={6} className={inputClass} />
+            <button onClick={handleDisable2FA} disabled={loading2FA} className="px-6 py-3 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 transition-all shadow-lg w-full">
+              {loading2FA ? 'Processing...' : 'Disable 2FA'}
+            </button>
+          </div>
+        ) : setupData ? (
+          <div className="p-6 bg-premium-bg rounded-xl border border-premium-divider space-y-6">
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+              <div className="bg-white p-4 rounded-xl border border-premium-divider shadow-sm shrink-0">
+                <img src={`data:image/svg+xml;base64,${setupData.qr_svg}`} alt="QR Code" className="w-40 h-40" />
+              </div>
+              <div className="space-y-4">
+                <p className="text-xs font-bold text-premium-primary leading-relaxed">1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc).</p>
+                <p className="text-xs font-bold text-premium-primary leading-relaxed">2. Enter the 6-digit code generated by the app below.</p>
+                <input type="text" value={otpCode} onChange={e => setOtpCode(e.target.value)} placeholder="123456" maxLength={6} className={inputClass} />
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <button onClick={() => setSetupData(null)} className="px-6 py-3 bg-transparent border border-premium-divider text-premium-primary rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex-1 hover:bg-white transition-all">Cancel</button>
+              <button onClick={handleEnable2FA} disabled={loading2FA} className="px-6 py-3 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-premium-secondary transition-all shadow-lg flex-1">
+                {loading2FA ? 'Verifying...' : 'Verify & Enable'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 bg-premium-bg rounded-xl border border-premium-divider flex items-center justify-between">
+            <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest max-w-sm">Protect your account with two-factor authentication via a TOTP app.</p>
+            <button onClick={handleSetup2FA} disabled={loading2FA} className="px-6 py-3 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-premium-secondary transition-all shadow-lg">
+              {loading2FA ? 'Loading...' : 'Enable 2FA'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Session Info */}
+      <div className="bg-white border border-premium-divider rounded-2xl p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-9 h-9 rounded-xl bg-premium-bg border border-premium-divider flex items-center justify-center text-premium-secondary"><Bell size={16} /></div>
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-premium-primary">Session & Activity</h3>
+        </div>
+        <div className="space-y-3">
+          {[
+            { label: 'Current Session', value: 'Active', detail: 'Admin Portal · Secure Gate' },
+            { label: 'Last Login', value: 'Today', detail: 'Chrome · MacOS' },
+            { label: 'Password Changed', value: 'Never', detail: '—' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between px-5 py-4 bg-premium-bg rounded-xl border border-premium-divider">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted">{item.label}</p>
+                <p className="text-xs font-bold text-premium-primary mt-0.5">{item.detail}</p>
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-widest text-premium-secondary">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { logout } = useAuthStore()
@@ -123,6 +427,43 @@ export default function AdminDashboard() {
   const [rotation, setRotation] = useState(0)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
   const [isCropping, setIsCropping] = useState(false)
+
+  // Real-time Notifications State
+  const [showAdminProfileDropdown, setShowAdminProfileDropdown] = useState(false)
+  const [showAdminNotifications, setShowAdminNotifications] = useState(false)
+  const [adminNotifications, setAdminNotifications] = useState<any[]>([])
+  const [adminUnreadCount, setAdminUnreadCount] = useState(0)
+
+  // Fetch Admin Notifications
+  const { data: notificationsData } = useQuery({
+    queryKey: ['admin-notifications'],
+    queryFn: () => api.get('/notifications').then(res => res.data),
+    refetchInterval: 30000 // Poll every 30s
+  })
+
+  useEffect(() => {
+    if (notificationsData) setAdminNotifications(notificationsData)
+  }, [notificationsData])
+
+  const { data: unreadCountData } = useQuery({
+    queryKey: ['admin-unread-count'],
+    queryFn: () => api.get('/notifications/unread-count').then(res => res.data),
+    refetchInterval: 30000
+  })
+
+  useEffect(() => {
+    if (unreadCountData) setAdminUnreadCount(unreadCountData.count)
+  }, [unreadCountData])
+
+  const markAdminAsRead = async (id: string) => {
+    try {
+      await api.post(`/notifications/${id}/read`)
+      setAdminNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date() } : n))
+      setAdminUnreadCount(prev => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    }
+  }
 
   const showNotify = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type })
@@ -355,6 +696,8 @@ export default function AdminDashboard() {
       title: 'System',
       key: 'system',
       items: [
+        { id: 'admin-profile', label: 'My Profile', icon: <UserIcon size={16} /> },
+        { id: 'admin-security', label: 'Security & 2FA', icon: <ShieldCheck size={16} /> },
         { id: 'settings', label: 'CMS Settings', icon: <Settings size={16} /> },
         { id: 'emails', label: 'Email Templates', icon: <Mail size={16} /> },
         { id: 'newsletter', label: 'Newsletter', icon: <Send size={16} /> },
@@ -445,37 +788,108 @@ export default function AdminDashboard() {
             <input type="text" placeholder="Search orders, products, customers..." className="bg-transparent border-none outline-none text-sm w-full text-premium-primary placeholder:text-premium-text-muted/50" />
           </div>
           <div className="flex items-center gap-4">
-            <button className="p-2 text-premium-text-muted hover:text-premium-primary relative transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-            </button>
-            <div className="relative group">
-              <button className="w-8 h-8 bg-premium-secondary rounded-full text-white flex items-center justify-center font-bold text-sm shadow-sm hover:scale-110 transition-all">
-                A
+            <div className="relative">
+              <button 
+                onClick={() => setShowAdminNotifications(!showAdminNotifications)}
+                className="p-2 text-premium-text-muted hover:text-premium-primary relative transition-colors"
+              >
+                <Bell size={20} />
+                {adminUnreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                )}
               </button>
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-premium-divider rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-2">
-                <div className="px-4 py-3 border-b border-premium-divider mb-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted">Administrator</p>
-                  <p className="text-xs font-bold text-premium-primary">admin@urair.com</p>
-                </div>
-                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg rounded-lg transition-colors">
-                  <UserIcon size={14} /> Edit Profile
-                </button>
-                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg rounded-lg transition-colors">
-                  <Shield size={14} /> Security & 2FA
-                </button>
-                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg rounded-lg transition-colors">
-                  <MessageSquare size={14} /> Contact Support
-                </button>
-                <div className="mt-2 pt-2 border-t border-premium-divider">
-                  <button 
-                    onClick={() => { logout(); navigate('/securegate/login'); }}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+
+              <AnimatePresence>
+                {showAdminNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-4 w-80 bg-white border border-premium-divider shadow-2xl rounded-2xl overflow-hidden z-[100]"
                   >
-                    <LogOut size={14} /> Sign Out
-                  </button>
-                </div>
-              </div>
+                    <div className="px-6 py-4 border-b border-premium-divider flex items-center justify-between bg-premium-bg">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-premium-primary">Admin Notifications</span>
+                      {adminUnreadCount > 0 && (
+                        <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded-full text-white font-black">{adminUnreadCount} NEW</span>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {adminNotifications.length > 0 ? (
+                        adminNotifications.map((notif) => (
+                          <div 
+                            key={notif.id} 
+                            onClick={() => {
+                              if (!notif.read_at) markAdminAsRead(notif.id);
+                              if (notif.data.action_url) navigate(notif.data.action_url);
+                              setShowAdminNotifications(false);
+                            }}
+                            className={cn(
+                              "px-6 py-4 hover:bg-premium-bg cursor-pointer border-b border-premium-divider transition-colors relative",
+                              !notif.read_at && "bg-red-50/30"
+                            )}
+                          >
+                            {!notif.read_at && <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1 h-1 bg-red-500 rounded-full" />}
+                            <p className="text-xs font-bold text-premium-primary">{notif.data.title}</p>
+                            <p className="text-[10px] text-premium-text-muted mt-1 leading-relaxed">{notif.data.message}</p>
+                            <p className="text-[8px] text-stone mt-2 uppercase font-bold">{new Date(notif.created_at).toLocaleDateString()}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-6 py-12 text-center">
+                          <Bell size={24} className="mx-auto mb-3 text-premium-divider" />
+                          <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest">No alerts today</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="relative">
+              <button 
+                onClick={() => setShowAdminProfileDropdown(!showAdminProfileDropdown)}
+                className="w-8 h-8 bg-premium-secondary rounded-full text-white flex items-center justify-center font-bold text-sm shadow-sm hover:scale-110 transition-all uppercase"
+              >
+                {user?.name?.[0] || 'A'}
+              </button>
+              
+              <AnimatePresence>
+                {showAdminProfileDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-4 w-64 bg-white border border-premium-divider shadow-2xl rounded-2xl overflow-hidden z-[100] p-2"
+                  >
+                    <div className="px-4 py-4 border-b border-premium-divider mb-2 bg-premium-bg rounded-xl">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-premium-secondary">Administrator</p>
+                      <p className="text-sm font-black text-premium-primary truncate">{user?.name}</p>
+                      <p className="text-[10px] text-premium-text-muted truncate">{user?.email}</p>
+                    </div>
+                    
+                    <button onClick={() => { setActiveTab('settings'); setShowAdminProfileDropdown(false); }} className="flex items-center gap-3 w-full px-4 py-3 text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg rounded-xl transition-all group">
+                      <UserIcon size={16} className="text-premium-secondary group-hover:scale-110 transition-transform" />
+                      Profile
+                    </button>
+                    
+                    <button onClick={() => { setActiveTab('admin-security'); setShowAdminProfileDropdown(false); }} className="flex items-center gap-3 w-full px-4 py-3 text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg rounded-xl transition-all group">
+                      <Shield size={16} className="text-premium-secondary group-hover:scale-110 transition-transform" />
+                      Security & 2FA
+                    </button>
+
+                    <div className="mt-2 pt-2 border-t border-premium-divider">
+                      <button 
+                        onClick={() => { logout(); navigate('/securegate/login'); }}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 rounded-xl transition-all group"
+                      >
+                        <LogOut size={16} className="group-hover:translate-x-1 transition-transform" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
@@ -1836,6 +2250,14 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'admin-profile' && (
+            <AdminProfileTab user={user} showNotify={showNotify} />
+          )}
+
+          {activeTab === 'admin-security' && (
+            <AdminSecurityTab showNotify={showNotify} />
           )}
 
           {activeTab === 'smtp' && (

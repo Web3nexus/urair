@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\NewsletterSubscriptionController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,7 @@ Route::middleware('throttle:5,1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/admin/login', [AuthController::class, 'adminLogin']);
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/2fa/verify-login', [\App\Http\Controllers\Api\TwoFactorController::class, 'verifyLogin']);
 });
 
 // Email Verification (Public signed link)
@@ -82,7 +84,21 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::put('/me', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // 2FA Management
+    Route::get('/2fa/status', [\App\Http\Controllers\Api\TwoFactorController::class, 'status']);
+    Route::post('/2fa/setup', [\App\Http\Controllers\Api\TwoFactorController::class, 'setup']);
+    Route::post('/2fa/enable', [\App\Http\Controllers\Api\TwoFactorController::class, 'enable']);
+    Route::post('/2fa/disable', [\App\Http\Controllers\Api\TwoFactorController::class, 'disable']);
+    Route::get('/2fa/recovery-codes', [\App\Http\Controllers\Api\TwoFactorController::class, 'recoveryCodes']);
+
     Route::apiResource('user-addresses', UserAddressController::class);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 
     // User Orders
     Route::get('/my-orders', [OrderController::class, 'myOrders']);

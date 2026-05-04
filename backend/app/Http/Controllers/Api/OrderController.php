@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use App\Mail\DynamicMailable;
 use App\Mail\OrderStatusUpdated;
+use App\Models\User;
+use App\Notifications\GeneralNotification;
 
 class OrderController extends Controller
 {
@@ -74,7 +76,20 @@ class OrderController extends Controller
                     ]);
                     
                     // Decrement stock securely within transaction
-                    Product::where('id', $itemData['product_id'])->decrement('stock', $itemData['quantity']);
+                    $product = Product::where('id', $itemData['product_id'])->first();
+                    $product->decrement('stock', $itemData['quantity']);
+
+                    if ($product->fresh()->stock <= 5) {
+                        $admins = User::where('role', 'admin')->orWhere('email', 'admin@urair.com')->get();
+                        foreach ($admins as $admin) {
+                            $admin->notify(new GeneralNotification(
+                                'Low Stock Alert',
+                                "Product '{$product->name}' is running low on stock ({$product->stock} left).",
+                                'low_stock',
+                                "/admin/products"
+                            ));
+                        }
+                    }
                 }
 
                 return $order;
@@ -92,6 +107,17 @@ class OrderController extends Controller
                 ]));
             } catch (\Exception $e) {
                 \Log::error('Failed to send order confirmation email: ' . $e->getMessage());
+            }
+
+            // Notify admin of new order
+            $admins = User::where('role', 'admin')->orWhere('email', 'admin@urair.com')->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new GeneralNotification(
+                    'New Order Received',
+                    "Order #{$order->id} has been placed by {$request->user()->name}.",
+                    'order',
+                    "/admin/orders/{$order->id}"
+                ));
             }
 
             return response()->json($order->load('items'), 201);
@@ -130,6 +156,14 @@ class OrderController extends Controller
             } catch (\Exception $e) {
                 \Log::error('Failed to send order status update email: ' . $e->getMessage());
             }
+
+            // Notify user in-app
+            $order->user->notify(new GeneralNotification(
+                'Order Status Updated',
+                "Your order #{$order->id} is now " . str_replace('_', ' ', $order->status) . ".",
+                'order_update',
+                "/account/orders/{$order->id}"
+            ));
         }
 
         return response()->json($order->load(['user', 'rider', 'items.product']));
