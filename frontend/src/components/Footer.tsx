@@ -62,7 +62,7 @@ export default function Footer() {
             <p className="text-stone text-xs font-light">
               {systemName} © 2000-{currentYear}, All Rights Reserved
             </p>
-            <div className="flex flex-wrap gap-6 items-center grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+            <div className="flex flex-wrap gap-8 items-center grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
                {cms.paymentLogos && cms.paymentLogos.length > 0 ? (
                  cms.paymentLogos.filter(l => l.active).map(logo => (
                    <img 
@@ -70,23 +70,23 @@ export default function Footer() {
                      src={logo.image} 
                      alt={logo.name} 
                      title={logo.name}
-                     className="h-5 w-auto object-contain" 
+                     className="h-8 w-auto object-contain" 
                    />
                  ))
                ) : (
                  <>
                    {/* Fallback to hardcoded logos if none uploaded */}
                    {/* Paystack */}
-                   <svg viewBox="0 0 512 512" className="h-5 w-auto fill-current text-white"><path d="M225.8 288c-12.7 0-25-5.1-33.9-14.1l-60.6-60.6c-18.7-18.7-18.7-49.1 0-67.9l60.6-60.6c9-9 21.2-14.1 33.9-14.1h211.7c8.8 0 16 7.2 16 16v95.3c0 8.8-7.2 16-16 16H225.8z" opacity=".5"/><path d="M225.8 441.3c-12.7 0-25-5.1-33.9-14.1l-60.6-60.6c-18.7-18.7-18.7-49.1 0-67.9l60.6-60.6c9-9 21.2-14.1 33.9-14.1h211.7c8.8 0 16 7.2 16 16v95.3c0 8.8-7.2 16-16 16H225.8z"/></svg>
+                   <svg viewBox="0 0 512 512" className="h-8 w-auto fill-current text-white"><path d="M225.8 288c-12.7 0-25-5.1-33.9-14.1l-60.6-60.6c-18.7-18.7-18.7-49.1 0-67.9l60.6-60.6c9-9 21.2-14.1 33.9-14.1h211.7c8.8 0 16 7.2 16 16v95.3c0 8.8-7.2 16-16 16H225.8z" opacity=".5"/><path d="M225.8 441.3c-12.7 0-25-5.1-33.9-14.1l-60.6-60.6c-18.7-18.7-18.7-49.1 0-67.9l60.6-60.6c9-9 21.2-14.1 33.9-14.1h211.7c8.8 0 16 7.2 16 16v95.3c0 8.8-7.2 16-16 16H225.8z"/></svg>
 
                    {/* Flutterwave */}
-                   <svg viewBox="0 0 1000 1000" className="h-4 w-auto fill-current text-white"><path d="M381 216h238l-119 206L381 216z"/><path d="M666 422h238L785 628l-119-206z"/><path d="M96 422h238l119 206L96 422z"/><path d="M381 628h238L500 834 381 628z" opacity=".5"/></svg>
+                   <svg viewBox="0 0 1000 1000" className="h-7 w-auto fill-current text-white"><path d="M381 216h238l-119 206L381 216z"/><path d="M666 422h238L785 628l-119-206z"/><path d="M96 422h238l119 206L96 422z"/><path d="M381 628h238L500 834 381 628z" opacity=".5"/></svg>
 
                    {/* Visa */}
-                   <svg viewBox="0 0 38 12" className="h-3.5 w-auto fill-current text-white"><path d="M14.65 0l-1.39 8.21h2.24L16.89 0h-2.24zm8.68 8.04c-.03-2.02 1.94-3.13 3.32-3.8.19-.09.38-.18.57-.27-1.12-.55-2.58-.59-3.41-.6-1.95-.03-3.95 1.05-3.95 3.12 0 1.54 1.34 2.37 2.5 2.94 1.18.57 1.58.94 1.58 1.45 0 .78-1 .15-1.93.36-1.12.24-1.98.54-2.48.78.58 1.45 2.11 2.32 3.86 2.32 2.14 0 4.14-1.05 4.15-3.23 0-1.2-.82-2-2.38-2.75l-.33-.16c-.95-.45-1.53-.76-1.53-1.22 0-.44.5-.89 1.44-.89.81 0 1.43.17 1.95.39l.29.13.35-2.18c-.46-.22-1.32-.42-2.35-.43zm7.04-1.36h-1.74c-.45 0-.79.13-1 .59l-3.32 7.82h2.36s.39-1.07.48-1.31h2.89c.07.31.28 1.31.28 1.31h2.08l-2.03-8.41zm-1.87 5.15c.13-.37.64-1.77.64-1.77.03-.1.06-.18.1-.28l.34 1.63h-1.08zm-15.01.69l.11-.53c.66-3.17 1.25-5.91 1.25-5.91h-2.31L8.71 8.21h2.35s.26-1.25.32-1.56h.03c.53 1.09 1.47 1.56 2.08 1.56z"/></svg>
+                   <svg viewBox="0 0 38 12" className="h-6 w-auto fill-current text-white"><path d="M14.65 0l-1.39 8.21h2.24L16.89 0h-2.24zm8.68 8.04c-.03-2.02 1.94-3.13 3.32-3.8.19-.09.38-.18.57-.27-1.12-.55-2.58-.59-3.41-.6-1.95-.03-3.95 1.05-3.95 3.12 0 1.54 1.34 2.37 2.5 2.94 1.18.57 1.58.94 1.58 1.45 0 .78-1 .15-1.93.36-1.12.24-1.98.54-2.48.78.58 1.45 2.11 2.32 3.86 2.32 2.14 0 4.14-1.05 4.15-3.23 0-1.2-.82-2-2.38-2.75l-.33-.16c-.95-.45-1.53-.76-1.53-1.22 0-.44.5-.89 1.44-.89.81 0 1.43.17 1.95.39l.29.13.35-2.18c-.46-.22-1.32-.42-2.35-.43zm7.04-1.36h-1.74c-.45 0-.79.13-1 .59l-3.32 7.82h2.36s.39-1.07.48-1.31h2.89c.07.31.28 1.31.28 1.31h2.08l-2.03-8.41zm-1.87 5.15c.13-.37.64-1.77.64-1.77.03-.1.06-.18.1-.28l.34 1.63h-1.08zm-15.01.69l.11-.53c.66-3.17 1.25-5.91 1.25-5.91h-2.31L8.71 8.21h2.35s.26-1.25.32-1.56h.03c.53 1.09 1.47 1.56 2.08 1.56z"/></svg>
 
                    {/* Mastercard */}
-                   <svg viewBox="0 0 38 24" className="h-4 w-auto text-white"><path d="M12 12A12 12 0 1 0 24 12A12 12 0 1 0 12 12Z" fill="currentColor" opacity="0.6"/><path d="M26 12A12 12 0 1 0 14 12A12 12 0 1 0 26 12Z" fill="currentColor"/></svg>
+                   <svg viewBox="0 0 38 24" className="h-7 w-auto text-white"><path d="M12 12A12 12 0 1 0 24 12A12 12 0 1 0 12 12Z" fill="currentColor" opacity="0.6"/><path d="M26 12A12 12 0 1 0 14 12A12 12 0 1 0 26 12Z" fill="currentColor"/></svg>
                 </>
                )}
             </div>

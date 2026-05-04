@@ -2,7 +2,8 @@ import {
   LayoutDashboard, ShoppingCart, Users, Briefcase, Settings, TrendingUp, DollarSign, 
   Plus, Palette, LayoutGrid, Menu, Sliders, AlertCircle, X, LogOut, Package, 
   DownloadCloud, Mail, Bell, CreditCard, ChevronDown, ChevronRight, Search as SearchIcon, FolderTree,
-  Globe, ShieldCheck, Shield, Upload, MessageSquare, Truck, User as UserIcon, Tag, Send
+  Globe, ShieldCheck, Shield, Upload, MessageSquare, Truck, User as UserIcon, Tag, Send,
+  Loader2, CheckCircle2
 } from 'lucide-react'
 import { useState, Fragment, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -13,6 +14,8 @@ import { cmsApi } from '@/api/cms'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/api/client'
 import { cn } from '@/utils/cn'
+import Cropper from 'react-easy-crop'
+import { getCroppedImg } from '@/utils/image'
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, BarChart, Bar, Cell
@@ -111,6 +114,14 @@ export default function AdminDashboard() {
     onConfirm?: () => void 
   } | null>(null)
   const [promptConfig, setPromptConfig] = useState<{ title: string, placeholder: string, onConfirm: (val: string) => void } | null>(null)
+
+  // Cropping State
+  const [croppingImage, setCroppingImage] = useState<string | null>(null)
+  const [croppingTarget, setCroppingTarget] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+  const [isCropping, setIsCropping] = useState(false)
 
   const showNotify = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type })
@@ -268,12 +279,28 @@ export default function AdminDashboard() {
       }
       const reader = new FileReader()
       reader.onloadend = () => {
-        api.post('/settings', { [key]: reader.result }).then(() => {
-          refetchSettings()
-          showNotify(`${key.replace('site_', '')} updated successfully`)
-        }).catch(() => showNotify('Upload failed', 'error'))
+        setCroppingImage(reader.result as string)
+        setCroppingTarget(key)
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  const handleCropComplete = async () => {
+    if (!croppingImage || !croppedAreaPixels || !croppingTarget) return
+    
+    setIsCropping(true)
+    try {
+      const croppedImage = await getCroppedImg(croppingImage, croppedAreaPixels)
+      await api.post('/settings', { [croppingTarget]: croppedImage })
+      refetchSettings()
+      showNotify(`${croppingTarget.replace('site_', '')} updated successfully`)
+      setCroppingImage(null)
+      setCroppingTarget(null)
+    } catch (e) {
+      showNotify('Failed to crop image', 'error')
+    } finally {
+      setIsCropping(false)
     }
   }
 
@@ -341,8 +368,15 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-premium-divider flex flex-col shadow-sm">
         <div className="h-16 flex items-center px-6 border-b border-premium-divider">
-          <Link to="/" className="text-xl font-black tracking-tighter text-premium-primary uppercase">
-            UR<span className="text-premium-secondary">AIR</span> <span className="text-xs font-bold tracking-widest text-premium-text-muted ml-2">ADMIN</span>
+          <Link to="/" className="flex items-center gap-2">
+            {settings.site_logo ? (
+              <img src={settings.site_logo} alt="Logo" className="h-6 object-contain" />
+            ) : (
+              <span className="text-xl font-black tracking-tighter text-premium-primary uppercase">
+                UR<span className="text-premium-secondary">AIR</span>
+              </span>
+            )}
+            <span className="text-[10px] font-black tracking-widest text-premium-text-muted ml-2 bg-premium-bg px-2 py-0.5 rounded border border-premium-divider uppercase">Admin</span>
           </Link>
         </div>
 
@@ -3209,6 +3243,66 @@ export default function AdminDashboard() {
           </motion.div>
         </div>
       )}
+
+      {/* Image Cropping Modal */}
+      <AnimatePresence>
+        {croppingImage && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[80vh]"
+            >
+              <div className="px-8 py-6 border-b border-premium-divider flex justify-between items-center bg-white z-10">
+                <div>
+                   <h3 className="text-lg font-black uppercase tracking-tight text-premium-primary">Crop {croppingTarget?.replace('site_', '')}</h3>
+                   <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest mt-1">Freeform adjustment for optimal branding</p>
+                </div>
+                <button onClick={() => setCroppingImage(null)} className="text-premium-text-muted hover:text-premium-primary transition-colors"><X size={24} /></button>
+              </div>
+
+              <div className="flex-1 relative bg-premium-bg">
+                <Cropper
+                  image={croppingImage}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={croppingTarget === 'site_favicon' ? 1 : undefined}
+                  onCropChange={setCrop}
+                  onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
+                  onZoomChange={setZoom}
+                />
+              </div>
+
+              <div className="px-8 py-6 border-t border-premium-divider bg-white flex items-center justify-between z-10">
+                <div className="flex items-center gap-6 flex-1 max-w-xs">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted">Zoom</span>
+                  <input 
+                    type="range" 
+                    min={1} 
+                    max={3} 
+                    step={0.1} 
+                    value={zoom} 
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="flex-1 accent-premium-secondary"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <button onClick={() => setCroppingImage(null)} className="px-8 py-3 border border-premium-divider rounded-xl text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg transition-all">Cancel</button>
+                  <button 
+                    onClick={handleCropComplete}
+                    disabled={isCropping}
+                    className="px-10 py-3 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-premium-secondary transition-all shadow-xl shadow-premium-primary/20 flex items-center gap-2"
+                  >
+                    {isCropping ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                    Apply Crop & Save
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

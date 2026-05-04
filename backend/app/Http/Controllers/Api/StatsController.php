@@ -78,9 +78,11 @@ class StatsController extends Controller
             ->take(5)
             ->get();
 
+        $currencySymbol = \App\Models\Setting::where('key', 'currencySymbol')->value('value') ?: '₦';
+
         return response()->json([
             'overview' => [
-                ['label' => 'Total Revenue', 'value' => '£' . number_format($totalRevenue, 2), 'trend' => ($revenueGrowth >= 0 ? '+' : '') . number_format($revenueGrowth, 1) . '%', 'icon' => 'DollarSign'],
+                ['label' => 'Total Revenue', 'value' => $currencySymbol . number_format($totalRevenue, 2), 'trend' => ($revenueGrowth >= 0 ? '+' : '') . number_format($revenueGrowth, 1) . '%', 'icon' => 'DollarSign'],
                 ['label' => 'Active Orders', 'value' => (string)$activeOrders, 'trend' => 'Orders', 'icon' => 'ShoppingCart'],
                 ['label' => 'Total Customers', 'value' => (string)$totalCustomers, 'trend' => 'Users', 'icon' => 'Users'],
                 ['label' => 'Conversion Rate', 'value' => number_format($conversionRate, 1) . '%', 'trend' => 'Traffic', 'icon' => 'TrendingUp'],

@@ -20,7 +20,7 @@ export default function AuthPages({ type }: { type: 'login' | 'register' | 'admi
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { setAuth } = useAuthStore()
-  const { turnstile_site_key } = useCMSStore()
+  const { turnstile_site_key, site_logo } = useCMSStore()
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,7 +86,16 @@ export default function AuthPages({ type }: { type: 'login' | 'register' | 'admi
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-sm space-y-12"
         >
-          <div className={`space-y-4 ${type === 'register' ? 'pt-12 lg:pt-16' : ''}`}>
+          <div className={`space-y-6 ${type === 'register' ? 'pt-12 lg:pt-16' : ''}`}>
+            <Link to="/" className="inline-block mb-4">
+              {site_logo ? (
+                <img src={site_logo} alt="Logo" className="h-10 object-contain" />
+              ) : (
+                <span className="text-2xl font-black tracking-tighter text-premium-primary uppercase">
+                  UR<span className="text-premium-secondary">AIR</span>
+                </span>
+              )}
+            </Link>
             <h1 className="text-5xl text-premium-primary uppercase font-black tracking-tighter">
               {type === 'login' || type === 'admin-login' ? 'Sign In' : 'Sign Up'}
             </h1>
