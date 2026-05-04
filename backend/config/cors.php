@@ -19,18 +19,8 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_values(array_unique(array_map(function ($url) {
-        return rtrim($url, '/');
-    }, array_filter(array_merge(
-        [
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-            env('APP_URL'),
-        ],
-        explode(',', env('ALLOWED_ORIGINS', ''))
-    ))))),
-
-    'allowed_origins_patterns' => [],
+    'allowed_origins' => [],
+    'allowed_origins_patterns' => ['#^https?://.*#'],
 
     'allowed_headers' => ['*'],
 
