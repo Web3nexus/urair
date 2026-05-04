@@ -120,6 +120,7 @@ export default function AdminDashboard() {
   const [croppingTarget, setCroppingTarget] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  const [rotation, setRotation] = useState(0)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
   const [isCropping, setIsCropping] = useState(false)
 
@@ -292,12 +293,14 @@ export default function AdminDashboard() {
     
     setIsCropping(true)
     try {
-      const croppedImage = await getCroppedImg(croppingImage, croppedAreaPixels)
+      const croppedImage = await getCroppedImg(croppingImage, croppedAreaPixels, rotation)
       await api.post('/settings', { [croppingTarget]: croppedImage })
       refetchSettings()
       showNotify(`${croppingTarget.replace('site_', '')} updated successfully`)
       setCroppingImage(null)
       setCroppingTarget(null)
+      setRotation(0)
+      setZoom(1)
     } catch (e) {
       showNotify('Failed to crop image', 'error')
     } finally {
@@ -3253,7 +3256,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] flex flex-col h-[85vh] max-h-[900px]"
+              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] max-h-[900px] border border-premium-divider"
             >
               <div className="px-8 py-6 border-b border-premium-divider flex justify-between items-center bg-white z-10">
                 <div>
@@ -3268,8 +3271,10 @@ export default function AdminDashboard() {
                   image={croppingImage}
                   crop={crop}
                   zoom={zoom}
+                  rotation={rotation}
                   aspect={croppingTarget === 'site_favicon' ? 1 : undefined}
                   onCropChange={setCrop}
+                  onRotationChange={setRotation}
                   onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
                   onZoomChange={setZoom}
                   classes={{
@@ -3280,29 +3285,43 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              <div className="px-8 py-6 border-t border-premium-divider bg-white flex flex-col md:flex-row items-center justify-between gap-6 z-10">
-                <div className="flex items-center gap-6 w-full md:w-auto flex-1 max-w-sm">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted whitespace-nowrap">Zoom Level</span>
-                  <input 
-                    type="range" 
-                    min={1} 
-                    max={3} 
-                    step={0.1} 
-                    value={zoom} 
-                    onChange={(e) => setZoom(Number(e.target.value))}
-                    className="flex-1 accent-premium-secondary h-1 bg-premium-divider rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-                <div className="flex gap-4 w-full md:w-auto">
-                  <button onClick={() => setCroppingImage(null)} className="flex-1 md:flex-none px-8 py-3 border border-premium-divider rounded-xl text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg transition-all">Cancel</button>
-                  <button 
-                    onClick={handleCropComplete}
-                    disabled={isCropping}
-                    className="flex-1 md:flex-none px-10 py-3 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-premium-secondary transition-all shadow-xl shadow-premium-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isCropping ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-                    Apply & Save
-                  </button>
+              <div className="px-8 py-6 border-t border-premium-divider bg-white flex flex-col gap-6 z-10">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-6 w-full md:w-auto flex-1 max-w-xs">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted whitespace-nowrap">Zoom</span>
+                    <input 
+                      type="range" 
+                      min={1} 
+                      max={3} 
+                      step={0.1} 
+                      value={zoom} 
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="flex-1 accent-premium-secondary h-1 bg-premium-divider rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex items-center gap-6 w-full md:w-auto flex-1 max-w-xs">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted whitespace-nowrap">Rotate</span>
+                    <input 
+                      type="range" 
+                      min={0} 
+                      max={360} 
+                      step={1} 
+                      value={rotation} 
+                      onChange={(e) => setRotation(Number(e.target.value))}
+                      className="flex-1 accent-premium-secondary h-1 bg-premium-divider rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex gap-4 w-full md:w-auto">
+                    <button onClick={() => setCroppingImage(null)} className="flex-1 md:flex-none px-8 py-3 border border-premium-divider rounded-xl text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg transition-all">Cancel</button>
+                    <button 
+                      onClick={handleCropComplete}
+                      disabled={isCropping}
+                      className="flex-1 md:flex-none px-10 py-3 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-premium-secondary transition-all shadow-xl shadow-premium-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isCropping ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                      Apply & Save
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

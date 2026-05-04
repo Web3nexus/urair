@@ -194,9 +194,8 @@ export function HeroSlider({ slides, stats }: HeroSliderProps) {
                 <img 
                   src={slide.image || "https://images.unsplash.com/photo-1550614005-045353066347?auto=format&fit=crop&q=80&w=1200"} 
                   alt="Hero Slide" 
-                  className="w-full h-full object-cover shadow-2xl"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-l via-transparent to-transparent opacity-20" style={{ backgroundImage: `linear-gradient(to left, ${slide.bg_color || '#f2f0f1'}, transparent, transparent)` }} />
               </motion.div>
 
             </div>
