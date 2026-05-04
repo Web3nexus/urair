@@ -279,6 +279,7 @@ export default function AdminDashboard() {
       }
       const reader = new FileReader()
       reader.onloadend = () => {
+        showNotify('Opening cropper...', 'success')
         setCroppingImage(reader.result as string)
         setCroppingTarget(key)
       }
@@ -3247,22 +3248,22 @@ export default function AdminDashboard() {
       {/* Image Cropping Modal */}
       <AnimatePresence>
         {croppingImage && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 bg-black/90 backdrop-blur-sm">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[80vh]"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.5)] flex flex-col h-[85vh] max-h-[900px]"
             >
               <div className="px-8 py-6 border-b border-premium-divider flex justify-between items-center bg-white z-10">
                 <div>
-                   <h3 className="text-lg font-black uppercase tracking-tight text-premium-primary">Crop {croppingTarget?.replace('site_', '')}</h3>
+                   <h3 className="text-xl font-black uppercase tracking-tight text-premium-primary">Adjust {croppingTarget?.replace('site_', '')}</h3>
                    <p className="text-[10px] text-premium-text-muted font-bold uppercase tracking-widest mt-1">Freeform adjustment for optimal branding</p>
                 </div>
-                <button onClick={() => setCroppingImage(null)} className="text-premium-text-muted hover:text-premium-primary transition-colors"><X size={24} /></button>
+                <button onClick={() => setCroppingImage(null)} className="p-2 text-premium-text-muted hover:text-premium-primary hover:bg-premium-bg rounded-full transition-all"><X size={24} /></button>
               </div>
 
-              <div className="flex-1 relative bg-premium-bg">
+              <div className="flex-1 relative bg-[#111] overflow-hidden min-h-[300px]">
                 <Cropper
                   image={croppingImage}
                   crop={crop}
@@ -3271,12 +3272,17 @@ export default function AdminDashboard() {
                   onCropChange={setCrop}
                   onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
                   onZoomChange={setZoom}
+                  classes={{
+                    containerClassName: 'cropper-container',
+                    mediaClassName: 'cropper-media',
+                    cropAreaClassName: 'cropper-area',
+                  }}
                 />
               </div>
 
-              <div className="px-8 py-6 border-t border-premium-divider bg-white flex items-center justify-between z-10">
-                <div className="flex items-center gap-6 flex-1 max-w-xs">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted">Zoom</span>
+              <div className="px-8 py-6 border-t border-premium-divider bg-white flex flex-col md:flex-row items-center justify-between gap-6 z-10">
+                <div className="flex items-center gap-6 w-full md:w-auto flex-1 max-w-sm">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted whitespace-nowrap">Zoom Level</span>
                   <input 
                     type="range" 
                     min={1} 
@@ -3284,18 +3290,18 @@ export default function AdminDashboard() {
                     step={0.1} 
                     value={zoom} 
                     onChange={(e) => setZoom(Number(e.target.value))}
-                    className="flex-1 accent-premium-secondary"
+                    className="flex-1 accent-premium-secondary h-1 bg-premium-divider rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
-                <div className="flex gap-4">
-                  <button onClick={() => setCroppingImage(null)} className="px-8 py-3 border border-premium-divider rounded-xl text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg transition-all">Cancel</button>
+                <div className="flex gap-4 w-full md:w-auto">
+                  <button onClick={() => setCroppingImage(null)} className="flex-1 md:flex-none px-8 py-3 border border-premium-divider rounded-xl text-[10px] font-black uppercase tracking-widest text-premium-primary hover:bg-premium-bg transition-all">Cancel</button>
                   <button 
                     onClick={handleCropComplete}
                     disabled={isCropping}
-                    className="px-10 py-3 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-premium-secondary transition-all shadow-xl shadow-premium-primary/20 flex items-center gap-2"
+                    className="flex-1 md:flex-none px-10 py-3 bg-premium-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-premium-secondary transition-all shadow-xl shadow-premium-primary/20 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isCropping ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-                    Apply Crop & Save
+                    Apply & Save
                   </button>
                 </div>
               </div>
