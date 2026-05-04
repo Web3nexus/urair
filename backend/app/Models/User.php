@@ -13,8 +13,8 @@ use Laravel\Sanctum\HasApiTokens;
 use App\Mail\DynamicMailable;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Mail;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 #[Fillable(['name', 'email', 'password', 'phone', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]

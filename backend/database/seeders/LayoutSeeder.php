@@ -19,12 +19,18 @@ class LayoutSeeder extends Seeder
         FooterSection::query()->delete();
         Schema::enableForeignKeyConstraints();
 
+        // Navigation
+        $mainNav = \App\Models\Navigation::updateOrCreate(
+            ['slug' => 'main-menu'],
+            ['name' => 'Main Menu']
+        );
+
         // Navigation Items
         $navItems = [
-            ['name' => 'HOME', 'path' => '/', 'sort_order' => 1, 'is_active' => true],
-            ['name' => 'COLLECTIONS', 'path' => '/shop', 'sort_order' => 2, 'is_active' => true],
-            ['name' => 'CURATIONS', 'path' => '/curations', 'sort_order' => 3, 'is_active' => true],
-            ['name' => 'STORY', 'path' => '/story', 'sort_order' => 4, 'is_active' => true],
+            ['label' => 'HOME', 'url' => '/', 'sort_order' => 1, 'navigation_id' => $mainNav->id],
+            ['label' => 'COLLECTIONS', 'url' => '/shop', 'sort_order' => 2, 'navigation_id' => $mainNav->id],
+            ['label' => 'CURATIONS', 'url' => '/curations', 'sort_order' => 3, 'navigation_id' => $mainNav->id],
+            ['label' => 'STORY', 'url' => '/story', 'sort_order' => 4, 'navigation_id' => $mainNav->id],
         ];
 
         foreach ($navItems as $item) {
