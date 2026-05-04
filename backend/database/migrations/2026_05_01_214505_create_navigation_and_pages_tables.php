@@ -11,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('navigation_items');
+        Schema::dropIfExists('navigations');
+        Schema::dropIfExists('pages');
+        Schema::dropIfExists('curation_products');
+        Schema::dropIfExists('curation_product');
+        Schema::dropIfExists('curations');
+
         Schema::create('navigations', function (Blueprint $table) {
             $table->id();
             $table->string('name');
