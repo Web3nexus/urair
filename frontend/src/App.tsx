@@ -35,6 +35,7 @@ function App() {
           <Route path="curations" element={<CurationsPage />} />
           <Route path="curations/:slug" element={<CurationDetailPage />} />
           <Route path="story" element={<StoryPage />} />
+          <Route path="about" element={<StoryPage />} />
           
           {/* Auth Routes */}
           <Route path="login" element={<AuthPages type="login" />} />
