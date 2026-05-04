@@ -11,6 +11,7 @@ interface Slide {
   subtitle: string
   image: string
   bg_color: string
+  duration?: number
 }
 
 interface HeroSliderProps {
@@ -31,11 +32,15 @@ export function HeroSlider({ slides, stats }: HeroSliderProps) {
   } as Slide]
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    // Default to 6 seconds if duration is not provided or invalid
+    const slideDuration = activeSlides[current]?.duration ? Number(activeSlides[current].duration) * 1000 : 6000
+    
+    const timer = setTimeout(() => {
       setCurrent((prev) => (prev + 1) % activeSlides.length)
-    }, 6000)
-    return () => clearInterval(timer)
-  }, [activeSlides.length])
+    }, slideDuration)
+    
+    return () => clearTimeout(timer)
+  }, [current, activeSlides])
 
   const handleNext = () => {
     setCurrent((prev) => (prev + 1) % activeSlides.length)

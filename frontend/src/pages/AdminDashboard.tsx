@@ -3021,6 +3021,24 @@ export default function AdminDashboard() {
                                  </div>
                                </div>
 
+                               <div className="space-y-2">
+                                 <label className="text-[10px] font-black uppercase tracking-widest text-premium-text-muted">Slide Duration (Seconds)</label>
+                                 <input 
+                                   type="number"
+                                   min="1"
+                                   step="1"
+                                   value={slide.duration || 6}
+                                   onChange={e => {
+                                     const slides = [...(sectionForm.content as any).slides];
+                                     slides[idx] = { ...slides[idx], duration: Number(e.target.value) };
+                                     setSectionForm(prev => ({ ...prev, content: { ...prev.content, slides } }));
+                                   }}
+                                   className="w-full px-4 py-3 bg-premium-bg border border-premium-divider/50 rounded-xl text-xs font-bold outline-none"
+                                   placeholder="6"
+                                 />
+                               </div>
+
+
                                {slide.image && (
                                  <div className="h-32 bg-premium-bg rounded-xl overflow-hidden border border-premium-divider">
                                    <img src={slide.image} alt="preview" className="w-full h-full object-cover" />
